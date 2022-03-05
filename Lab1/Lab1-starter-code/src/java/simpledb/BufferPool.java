@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.*;
+import java.util.*;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +26,10 @@ public class BufferPool {
     other classes. BufferPool should use the numPages argument to the
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
+    
+    public final int MAX_PAGES;
+    
+    private HashMap<PageId, Page> bp_map;
 
     /**
      * Creates a BufferPool that caches up to numPages pages.
@@ -33,6 +38,8 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
+    	MAX_PAGES = numPages;
+    	bp_map = new HashMap<>(MAX_PAGES);
     }
     
     public static int getPageSize() {
@@ -67,6 +74,18 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
+    	if(bp_map.containsKey(pid)) {
+    		return bp_map.get(pid);
+    	}else {
+    		HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+    		if (bp_map.size() < MAX_PAGES) {
+    			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+    			bp_map.put(pid, fetched_page);
+    			return fetched_page;
+    		}
+    		throw new DbException();
+    	}
+    	
         return null;
     }
 

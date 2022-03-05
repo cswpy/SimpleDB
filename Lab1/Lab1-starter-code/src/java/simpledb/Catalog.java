@@ -17,26 +17,58 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Threadsafe
  */
 public class Catalog {
+	
+	
+	/** The TableInfo class keeps track of all information about a table:
+	 *  tableId, tableName, schema, pKey.
+	 */
+	public class Table{
+		public int tableId;
+		public DbFile file;
+		public String tableName;
+		public TupleDesc schema;
+		public String pKey;
+		
+		// Constructors
+		public Table(DbFile file, String tableName, String pKey) {
+			this.file = file;
+			this.tableId = file.getId();
+			this.tableName = tableName;
+			this.schema = file.getTupleDesc();
+			this.pKey = pKey;
+		}
+	}
 
+	public ArrayList<Table> tableList;
+	
     /**
      * Constructor.
      * Creates a new, empty catalog.
      */
     public Catalog() {
-        // some code goes here
+    	this.tableList = new ArrayList<Table>();
     }
 
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified DbFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
+     * @param file the contents of the table to add;  file.getId() is the identifier of
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      * @param name the name of the table -- may be an empty string.  May not be null.  If a name
      * conflict exists, use the last table to be added as the table for a given name.
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+    	// some code goes here
+    	// check if the name or the id conflicts with an existing table	
+    	for(int i=0; i<this.tableList.size(); i++) {
+    		if(this.tableList.get(i).tableId == file.getId() || this.tableList.get(i).tableName.equals(name)) {
+    			this.tableList.set(i, new Table(file, name , pkeyField));
+    			return;
+    		}
+    	}
+    	// if there is no name conflict, just add the table
+        this.tableList.add(new Table(file, name , pkeyField));    	
     }
 
     public void addTable(DbFile file, String name) {
@@ -47,7 +79,7 @@ public class Catalog {
      * Add a new table to the catalog.
      * This table has tuples formatted using the specified TupleDesc and its
      * contents are stored in the specified DbFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
+     * @param file the contents of the table to add;  file.getId() is the identifier of
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      */
     public void addTable(DbFile file) {
@@ -59,8 +91,15 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+    	// some code goes here
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		if(temp_table.tableName.equals(name)) {
+    			return temp_table.tableId;
+    		}
+    	}
+    	throw new NoSuchElementException();
     }
 
     /**
@@ -71,7 +110,14 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		if(temp_table.tableId == tableid) {
+    			return temp_table.schema;
+    		}
+    	}
+    	throw new NoSuchElementException();
     }
 
     /**
@@ -82,27 +128,55 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		if(temp_table.tableId == tableid) {
+    			return temp_table.file;
+    		}
+    	}       	
+    	throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {
         // some code goes here
-        return null;
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		if(temp_table.tableId == tableid) {
+    			return temp_table.pKey;
+    		}
+    	}
+    	throw new NoSuchElementException();
     }
 
     public Iterator<Integer> tableIdIterator() {
         // some code goes here
-        return null;
+    	ArrayList<Integer> tableIdList = new ArrayList<Integer>();
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		tableIdList.add(temp_table.tableId);
+    	}	   
+        return tableIdList.iterator();
     }
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+    	Iterator<Table> iter = this.tableList.iterator();
+    	while(iter.hasNext()) {
+    		Table temp_table = iter.next();
+    		if(temp_table.tableId == id) {
+    			return temp_table.tableName;
+    		}
+    	}
+    	throw new NoSuchElementException();
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+    	this.tableList.clear();
     }
     
     /**

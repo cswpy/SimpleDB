@@ -56,9 +56,9 @@ public class RecordId implements Serializable {
     	if(o instanceof RecordId)
     	{
     		RecordId rid2 = (RecordId) o;
-    		if (pid == rid2.getPageId() && tup_num == rid2.getTupleNumber())
+    		if(this.hashCode() == rid2.hashCode())
     		{
-    			return true;	
+    			return true;
     		}
     	}
     	return false;

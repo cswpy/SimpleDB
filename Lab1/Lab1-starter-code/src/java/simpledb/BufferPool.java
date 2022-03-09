@@ -76,17 +76,15 @@ public class BufferPool {
         // some code goes here
     	if(bp_map.containsKey(pid)) {
     		return bp_map.get(pid);
-    	}else {
-    		HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-    		if (bp_map.size() < MAX_PAGES) {
-    			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
-    			bp_map.put(pid, fetched_page);
-    			return fetched_page;
-    		}
-    		throw new DbException();
     	}
+		HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+		if (bp_map.size() < MAX_PAGES) {
+			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+			bp_map.put(pid, fetched_page);
+			return fetched_page;
+		}
+		throw new DbException("Maximum page number reached in BufferPool");
     	
-        return null;
     }
 
     /**

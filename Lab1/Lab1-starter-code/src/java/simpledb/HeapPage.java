@@ -67,8 +67,7 @@ public class HeapPage implements Page {
     */
     private int getNumTuples() {        
         // some code goes here
-        int numTuples = (int) Math.floor((BufferPool.getPageSize() * 8) / (td.getSize() * 8 + 1));
-        return numTuples;        
+        return (int) Math.floor((BufferPool.getPageSize() * 8) / (td.getSize() * 8 + 1));    
     }
 
     /**
@@ -77,8 +76,7 @@ public class HeapPage implements Page {
      */
     private int getHeaderSize() {   
     	// some code goes here
-        int headerBytes = (int) Math.ceil(getNumTuples() / 8.0);
-        return headerBytes;                 
+        return (int) Math.ceil(getNumTuples() / 8.0);                 
     }
     
     /** Return a view of this page before it was modified
@@ -296,9 +294,9 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
-    	int header_index = (int) Math.floor(i / 8);
-    	int header_pos = i - (header_index * 8);
-    	return ((header[header_index] >> header_pos) & 1) == 1;
+    	int header_byte = (int) Math.floor(i / 8);
+    	int header_bit = i - (header_byte * 8);
+    	return ((header[header_byte] >> header_bit) & 1) == 1;
     }
 
     /**

@@ -28,8 +28,8 @@ public class Tuple implements Serializable {
     public Tuple(TupleDesc td) {
         // some code goes here
     	this.td = td;
-    	this.num_fields = td.numFields(); 
-    	this.fields = new Field[this.num_fields];
+    	num_fields = td.numFields(); 
+    	fields = new Field[this.num_fields];
     }
 
     /**
@@ -81,7 +81,7 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-    	return this.fields[i];
+    	return fields[i];
     }
 
     /**
@@ -113,7 +113,22 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
-    	 return Arrays.asList(this.fields).iterator();
+    	return new Iterator<Field>() {
+    		private int i = 0;
+    		
+			@Override
+			public boolean hasNext() {
+				return i < num_fields;
+			}
+			@Override
+			public Field next() {
+				return fields[i];
+			}
+			@Override
+			public void remove() {
+			}
+    	};
+    	 
     }
 
     /**

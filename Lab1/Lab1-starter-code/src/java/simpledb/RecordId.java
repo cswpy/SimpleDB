@@ -73,8 +73,7 @@ public class RecordId implements Serializable {
     @Override
     public int hashCode() {
         // some code goes here
-    	int prime = 31;
-    	return prime * pid.hashCode() + tup_num;
+    	return this.getTupleNumber() + this.getPageId().hashCode();
 
     }
 

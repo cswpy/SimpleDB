@@ -34,7 +34,7 @@ public class HeapPageId implements PageId {
         return page_num;
     }
 
-    /**
+    /*
      * @return a hash code for this page, represented by the concatenation of
      *   the table number and the page number (needed if a PageId is used as a
      *   key in a hash table in the BufferPool, for example.)
@@ -42,8 +42,7 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         // some code goes here
-    	int prime = 31;
-    	return prime * tid + page_num;
+    	return this.getTableId() + this.getPageNumber();
     }
 
     /**
@@ -58,7 +57,7 @@ public class HeapPageId implements PageId {
     	if (o instanceof PageId)
     	{
     		HeapPageId hpid2 = (HeapPageId) o;
-    		if(tid == hpid2.getTableId() && page_num == hpid2.getPageNumber())
+    		if(this.hashCode() == hpid2.hashCode())
     		{
     			return true;
     		}

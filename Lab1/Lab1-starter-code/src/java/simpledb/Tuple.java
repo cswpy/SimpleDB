@@ -3,6 +3,7 @@ package simpledb;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -114,21 +115,23 @@ public class Tuple implements Serializable {
     {
         // some code goes here
     	return new Iterator<Field>() {
-    		private int i = 0;
+    		private int i = -1;
     		
 			@Override
 			public boolean hasNext() {
+				i+=1;
 				return i < num_fields;
 			}
 			@Override
+			
 			public Field next() {
+				if(!hasNext())
+				{
+					throw new NoSuchElementException();
+				}
 				return fields[i];
 			}
-			@Override
-			public void remove() {
-			}
     	};
-    	 
     }
 
     /**

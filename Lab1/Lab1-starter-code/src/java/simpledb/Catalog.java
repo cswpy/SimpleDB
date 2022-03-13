@@ -19,8 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Catalog {
 	
 	
-	/** The TableInfo class keeps track of all information about a table:
-	 *  tableId, tableName, schema, pKey.
+	/** The Table class keeps track of all information about a table:
+	 *  tableId, file, tableName, schema, pKey.
 	 */
 	public class Table{
 		public int tableId;

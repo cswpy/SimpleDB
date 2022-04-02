@@ -1,12 +1,24 @@
 package simpledb;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import simpledb.Aggregator.Op;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
-
+    private int gbField;
+    private Type gbFieldType;
+    private int agField;
+    private Op aggOp;
+    private HashMap<Field, Integer> gb2val;
+	
+    
     /**
      * Aggregate constructor
      * @param gbfield the 0-based index of the group-by field in the tuple, or NO_GROUPING if there is no grouping
@@ -18,6 +30,14 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+    	if (what != Op.COUNT) {
+    		throw new IllegalArgumentException("Only count aggregation is supported for string");
+    	}
+    	this.gbField = gbfield;
+    	this.gbFieldType = gbfieldtype;
+    	this.agField = afield;
+    	this.aggOp = what;	
+    	this.gb2val = new HashMap<>();
     }
 
     /**
@@ -26,6 +46,22 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+    	Field agfield = tup.getField(agField);
+    	if (agfield.getType() != Type.STRING_TYPE) {
+    		throw new IllegalArgumentException("Cannot aggregate on non-string value");
+    	}
+    	
+    	Field gbfield = null;
+    	if(gbField != Aggregator.NO_GROUPING) {
+    		gbfield = tup.getField(gbField);
+    	}   	
+		if(gb2val.containsKey(gbfield)) {
+			int curr_cnt = gb2val.get(gbfield);
+			gb2val.put(gbfield, curr_cnt+1);
+		}else {
+			gb2val.put(gbfield, 1);
+		}
+    	
     }
 
     /**
@@ -38,7 +74,28 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+    	Type[] new_types;
+    	if (gbField == IntegerAggregator.NO_GROUPING) {
+    		new_types = new Type[] {Type.INT_TYPE};
+    	}else {
+    		new_types = new Type[] {gbFieldType, Type.INT_TYPE};
+    	}
+    	TupleDesc newTd = new TupleDesc(new_types);
+    	ArrayList<Tuple> tups = new ArrayList<Tuple>();
+    	
+    	for(Map.Entry<Field, Integer> set : gb2val.entrySet()) {
+    		Tuple tup = new Tuple(newTd);
+    		if (gbField == IntegerAggregator.NO_GROUPING) {
+    			tup.setField(0, new IntField(set.getValue()));
+    		}else {
+    			tup.setField(0, set.getKey());
+    			tup.setField(1, new IntField(set.getValue()));
+    		}
+    		tups.add(tup);
+    	}
+    	
+        return new TupleIterator(newTd, tups);
+    	
     }
 
 }

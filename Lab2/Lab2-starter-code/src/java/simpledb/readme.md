@@ -1,1 +1,1 @@
-Daniel Jang, Philip Wang, Steven Chen
+Daniel Jang, Philip Wang, Suei-Wen Chen

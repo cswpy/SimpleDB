@@ -141,17 +141,17 @@ public class HeapFile implements DbFile {
             TransactionAbortedException {
         // some code goes here
     	// not necessary for lab1
-//    	
-//    	// The array to return
-//    	ArrayList<Page> pageArr = new ArrayList<>();
-//    	
-//    	// find the page containing the tuple to be deleted	
-//    	PageId pid = t.getRecordId().getPageId();
-//  		HeapPage target_page = (HeapPage) readPage(pid);
-//  		target_page.deleteTuple(t);
-//    	target_page.markDirty(true, tid);
-//    	pageArr.add(target_page);
-//    	return pageArr;
+    	
+    	// The array to return
+    	ArrayList<Page> pageArr = new ArrayList<>();
+    	
+    	// find the page containing the tuple to be deleted	
+    	PageId pid = t.getRecordId().getPageId();
+  		HeapPage target_page = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
+  		target_page.deleteTuple(t);
+    	target_page.markDirty(true, tid);
+    	pageArr.add(target_page);
+    	return pageArr;
     	
     	
     }

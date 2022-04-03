@@ -160,10 +160,9 @@ public class BufferPool {
     		if (bp_map.containsKey(pid)) {
     			bp_map.put(pid, page);
     		}
-    		else { // new page was written on disk; need to get them
+    		else { // new page was written on disk; get them into the buffer
     			getPage(tid, page.getId(), Permissions.READ_WRITE);
     		}
-    		
     	}    	
     }
 

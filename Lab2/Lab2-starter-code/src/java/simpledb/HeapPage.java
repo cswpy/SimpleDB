@@ -286,8 +286,8 @@ public class HeapPage implements Page {
     	for (int i=0; i<numSlots; i++) {
     		if(!isSlotUsed(i)) {
     			markSlotUsed(i, true); // mark slot as used
-    	    	tuples[i] = t;    	   // add tuple to page
     			t.setRecordId(new RecordId(pid, i));  // change rid	
+    	    	tuples[i] = t;    	   // add tuple to page
     			break;
     		}
     	}
@@ -311,7 +311,10 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
     	// Not necessary for lab1
-        return dirty.tid;      
+    	if (dirty.is_dirty) {
+    		return dirty.tid;
+    	}
+    	return null;     
     }
 
     /**

@@ -150,6 +150,21 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	
+    	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+    	ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
+    	// replace all the affected pages by the new version
+    	for (Page page: dirtied_pages) {
+    		PageId pid = page.getId();
+    		// if page already in buffer
+    		if (bp_map.containsKey(pid)) {
+    			bp_map.put(pid, page);
+    		}
+    		else { // new page was written on disk; need to get them
+    			getPage(tid, page.getId(), Permissions.READ_WRITE);
+    		}
+    		
+    	}    	
     }
 
     /**
@@ -169,6 +184,14 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	
+    	int table_id = t.getRecordId().getPageId().getTableId();
+    	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(table_id);
+    	ArrayList<Page> dirtied_pages = file.deleteTuple(tid, t);
+    	// mark affected pages as dirty
+    	for (Page page: dirtied_pages) {
+    		bp_map.put(page.getId(), page);
+    	}    	
     }
 
     /**

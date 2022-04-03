@@ -30,7 +30,7 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
-    	if (what != Op.COUNT) {
+    	if (! (what == Op.COUNT)) {
     		throw new IllegalArgumentException("Only count aggregation is supported for string");
     	}
     	this.gbField = gbfield;

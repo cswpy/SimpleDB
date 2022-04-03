@@ -8,7 +8,7 @@ public class Insert extends Operator {
 
 	private static final long serialVersionUID = 1L;
 
-	private final TransactionId transactionId;
+	private TransactionId transactionId;
 	private OpIterator child;
 	private int tid;
 	private boolean hasImplemented;

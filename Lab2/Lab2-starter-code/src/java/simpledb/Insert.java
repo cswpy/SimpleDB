@@ -1,5 +1,8 @@
 package simpledb;
 
+import java.io.IOException;
+import java.util.NoSuchElementException;
+
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
  * constructor
@@ -12,6 +15,7 @@ public class Insert extends Operator {
 	private OpIterator child;
 	private int tid;
 	private boolean hasImplemented;
+	private int cnt;
 
 	/**
 	 * Constructor.
@@ -27,6 +31,7 @@ public class Insert extends Operator {
 		this.child = child;
 		this.tid = tableId;
 		this.hasImplemented = false;
+		this.cnt = 0;
 	}
 
 	public TupleDesc getTupleDesc() {
@@ -36,18 +41,13 @@ public class Insert extends Operator {
 
 	public void open() throws DbException, TransactionAbortedException {
 		this.child.open();
-		this.hasImplemented = true;
-		try {
-			this.fetchNext();
-		} catch (DbException e)
-		{	
-			throw new DbException("DB exception Error in open");
-		}
+		super.open();
 		// some code goes here
 	}
 
 	public void close() {
 		// some code goes here
+		super.close();
 		this.child.close();
 	}
 
@@ -70,22 +70,23 @@ public class Insert extends Operator {
 	 */
 	protected Tuple fetchNext() throws TransactionAbortedException, DbException {
 		// some code goes here
-		if(this.hasImplemented == true)
-		{
+		if(this.hasImplemented) {
 			return null;
 		}
 		BufferPool bp = Database.getBufferPool();
-		int cnt = 0;
-		while (this.child.hasNext()) {
+		
+		while(this.child.hasNext()){
 			Tuple tup = child.next();
 			try {
 				bp.insertTuple(this.transactionId, this.tid, tup);
-			} catch (Exception e) {
-				throw new DbException("Error in fetchNext");
+				cnt+=1;
+			}catch(Exception e) {
+				throw new DbException("Db exception");
 			}
 		}
 		Tuple affectedTups = new Tuple(this.getTupleDesc());
 		affectedTups.setField(0, new IntField(cnt));
+		this.hasImplemented = true;
 		return affectedTups;
 	}
 

@@ -11,6 +11,7 @@ public class Delete extends Operator {
 	private TransactionId transactionId;
 	private OpIterator child;
 	private boolean hasImplemented;
+	private int cnt;
 
 
     private static final long serialVersionUID = 1L;
@@ -38,19 +39,13 @@ public class Delete extends Operator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
-    	this.hasImplemented = true;
     	this.child.open();
-    	try {
-    		this.fetchNext();
-    	} catch(DbException e)
-    	{
-    		throw new DbException("Error in open");
-    	}
-    	
+    	super.open();
     }
 
     public void close() {
         // some code goes here
+    	super.close();
     	this.child.close();
     }
 
@@ -70,22 +65,22 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-		if(this.hasImplemented == true)
-		{
+		if(this.hasImplemented) {
 			return null;
 		}
 		BufferPool bp = Database.getBufferPool();
-		int cnt = 0;
-		while (this.child.hasNext()) {
+		while(this.child.hasNext()){
 			Tuple tup = child.next();
 			try {
 				bp.deleteTuple(this.transactionId, tup);
-			} catch (Exception e) {
-				throw new DbException("Error in fetchNext");
+				cnt+=1;
+			}catch(Exception e) {
+				throw new DbException("Db exception");
 			}
 		}
 		Tuple affectedTups = new Tuple(this.getTupleDesc());
 		affectedTups.setField(0, new IntField(cnt));
+		this.hasImplemented = true;
 		return affectedTups;
     }
 

@@ -39,7 +39,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
     	MAX_PAGES = numPages;
-    	bp_map = new HashMap<>(MAX_PAGES);
+    	bp_map = new LinkedHashMap<>(MAX_PAGES);
     }
     
     public static int getPageSize() {
@@ -150,7 +150,6 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-    	
     	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
     	ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
     	// replace all the affected pages by the new version
@@ -201,7 +200,10 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-
+    	for(Map.Entry<PageId, Page> bp_element : bp_map.entrySet() ) {
+    		PageId pid = bp_element.getKey();
+    		this.flushPage(pid);
+    	}
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -215,6 +217,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+    	bp_map.remove(pid);
     }
 
     /**
@@ -223,7 +226,17 @@ public class BufferPool {
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
-        // not necessary for lab1
+    	if(bp_map.containsKey(pid)){
+    		HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+    		HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+    		TransactionId tid = fetched_page.isDirty();
+    		if(tid != null) {
+    			hf.writePage(fetched_page);
+    			fetched_page.markDirty(false, tid);
+    		}
+    	}else{
+    		throw new IOException("pid not in buffer");
+    	}
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -239,7 +252,19 @@ public class BufferPool {
      */
     private synchronized  void evictPage() throws DbException {
         // some code goes here
-        // not necessary for lab1
+    	Iterator bp_iterator = bp_map.entrySet().iterator();
+    	if(bp_iterator.hasNext()) {
+    		Map.Entry<PageId, Page> eldest_p = (Map.Entry<PageId, Page>) bp_iterator.next();
+    		PageId pid = eldest_p.getKey();
+    		try {
+				flushPage(pid);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	bp_map.remove(pid);
+    	}else {
+    		throw new DbException("There is no page to evict");
+    	}
     }
 
 }

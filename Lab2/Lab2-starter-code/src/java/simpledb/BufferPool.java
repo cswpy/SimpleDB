@@ -150,10 +150,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+    	
     	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
     	ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
     	// replace all the affected pages by the new version
     	for (Page page: dirtied_pages) {
+    		page.markDirty(true, tid);
     		PageId pid = page.getId();
     		// if page already in buffer
     		if (bp_map.containsKey(pid)) {

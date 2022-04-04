@@ -98,6 +98,9 @@ public class HeapFile implements DbFile {
             raf.seek(page.getId().getPageNumber() * BufferPool.getPageSize());
             byte[] data = page.getPageData();
             raf.write(data);
+            raf.close();
+        }catch(IOException e) {
+        	e.printStackTrace();
         }
     }
 

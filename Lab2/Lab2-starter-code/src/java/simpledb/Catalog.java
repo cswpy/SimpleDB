@@ -37,6 +37,7 @@ public class Catalog {
 			this.schema = file.getTupleDesc();
 			this.pKey = pKey;
 		}
+		
 	}
 
 	public ArrayList<Table> tableList;

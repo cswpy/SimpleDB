@@ -14,7 +14,8 @@ public class SeqScan implements OpIterator {
     private TransactionId tid;
     private int tableid;
     private String tableAlias;
-    public DbFileIterator iterator;
+    public DbFile f;
+    public DbFileIterator t_iterator;
     
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -37,7 +38,8 @@ public class SeqScan implements OpIterator {
     	this.tid = tid;
     	this.tableid = tableid;
     	this.tableAlias = tableAlias; 
-    	this.iterator = Database.getCatalog().getDatabaseFile(tableid).iterator(tid);
+    	this.f = Database.getCatalog().getDatabaseFile(tableid);
+    	this.t_iterator = this.f.iterator(tid);
     }
 
     /**
@@ -83,7 +85,7 @@ public class SeqScan implements OpIterator {
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
     	try {
-    		this.iterator.open();
+    		this.t_iterator.open();
     	} catch(Exception e) {
     		throw(new DbException("Error when accessing database"));
     	}
@@ -114,21 +116,23 @@ public class SeqScan implements OpIterator {
     	}
         return new TupleDesc(td_array);
     }
-
+    
+    @Override
     public boolean hasNext() throws TransactionAbortedException, DbException {
         // some code goes here
     	try {
-    		return this.iterator.hasNext();
+    		return this.t_iterator.hasNext();
     	} catch(Exception e) {
     		throw(new DbException("Error when accessing next tuple"));
     	}
     }
-
+    
+    @Override
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
         // some code goes here
     	try {
-    		return this.iterator.next();
+    		return this.t_iterator.next();
     	} catch(Exception e) {
     		throw(new NoSuchElementException());
     	}
@@ -136,12 +140,13 @@ public class SeqScan implements OpIterator {
 
     public void close() {
         // some code goes here
-    	this.iterator.close();
+    	this.t_iterator.close();
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
-    	this.open();
+    	this.t_iterator.rewind();
     }
+ 
 }

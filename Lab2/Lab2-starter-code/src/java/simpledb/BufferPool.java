@@ -1,9 +1,11 @@
 package simpledb;
 
-import java.io.*;
-import java.util.*;
-
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -150,9 +152,9 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
-    	
-    	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
+    	HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);	
     	ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
+    	System.out.println(dirtied_pages);	
     	// replace all the affected pages by the new version
     	for (Page page: dirtied_pages) {
     		page.markDirty(true, tid);
@@ -190,6 +192,7 @@ public class BufferPool {
     	ArrayList<Page> dirtied_pages = file.deleteTuple(tid, t);
     	// mark affected pages as dirty
     	for (Page page: dirtied_pages) {
+    		if(!bp_map.containsKey(page.getId())) getPage(tid, page.getId(), Permissions.READ_ONLY);
     		bp_map.put(page.getId(), page);
     	}    	
     }

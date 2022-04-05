@@ -1,6 +1,7 @@
 package simpledb;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
@@ -29,6 +30,7 @@ public class Delete extends Operator {
 		this.transactionId = t;
 		this.child = child;
 		this.hasImplemented = false;
+		this.cnt = 0;
         // some code goes here
     }
 
@@ -39,8 +41,9 @@ public class Delete extends Operator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
-    	this.child.open();
     	super.open();
+    	this.child.open();
+    	
     }
 
     public void close() {
@@ -52,6 +55,7 @@ public class Delete extends Operator {
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
     	this.child.rewind();
+    	this.hasImplemented = false;
     }
 
     /**
@@ -73,14 +77,14 @@ public class Delete extends Operator {
 			Tuple tup = child.next();
 			try {
 				bp.deleteTuple(this.transactionId, tup);
-				cnt+=1;
+				this.cnt+=1;
 			}catch(Exception e) {
 				throw new DbException("Db exception");
 			}
 		}
+		this.hasImplemented = true;
 		Tuple affectedTups = new Tuple(this.getTupleDesc());
 		affectedTups.setField(0, new IntField(cnt));
-		this.hasImplemented = true;
 		return affectedTups;
     }
 
@@ -95,5 +99,19 @@ public class Delete extends Operator {
         // some code goes here
     	this.child = children[0];
     }
-
+    
+//    @Override
+//    public Tuple next() throws NoSuchElementException {
+//    	try {
+//			return this.fetchNext();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			throw new NoSuchElementException("error at next");
+//		}
+//    }
+//    
+//    public boolean hasNext() throws DbException, TransactionAbortedException {
+//    	return this.child.hasNext();
+//    }
+    
 }

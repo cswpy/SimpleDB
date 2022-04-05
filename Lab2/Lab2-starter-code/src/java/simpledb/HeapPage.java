@@ -257,12 +257,13 @@ public class HeapPage implements Page {
     	RecordId rid = t.getRecordId();
     	PageId page_id = rid.getPageId();
     	int tup_num = rid.getTupleNumber();
-    	if (page_id != pid) {
+    	if (page_id != pid || rid.getTupleNumber() >= numSlots) {
     		throw new DbException("Tuple not on this page.");
     	}
     	if (!isSlotUsed(tup_num)) {
     		throw new DbException("Tuple slot already empty.");
     	}
+    	tuples[rid.getTupleNumber()] = null;
     	markSlotUsed(tup_num, false); 
     }
 

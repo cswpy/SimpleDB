@@ -107,7 +107,7 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         // some code goes here
-        return (int)(_f.length() / BufferPool.getPageSize());
+        return (int) Math.ceil((double)_f.length() / (double) BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -150,6 +150,7 @@ public class HeapFile implements DbFile {
     	
     	// The array to return
     	ArrayList<Page> pageArr = new ArrayList<>();
+    	if (t.getRecordId().getPageId().getTableId() != getId()) throw new DbException("Tuple not in this file");
     	
     	// find the page containing the tuple to be deleted	
     	PageId pid = t.getRecordId().getPageId();
@@ -172,7 +173,7 @@ public class HeapFile implements DbFile {
     private class HeapFileIterator implements DbFileIterator{
     	
     	private TransactionId _tid;
-    	private Integer page_idx;
+    	private int page_idx;
     	private Iterator<Tuple> heap_page_iter;
     	private BufferPool bp;
     	   	
@@ -191,30 +192,40 @@ public class HeapFile implements DbFile {
     	 }
     	 
     	 public boolean hasNext() throws DbException, TransactionAbortedException {
-    		 if(page_idx == null) {
-    			 return false;
+    		 if (heap_page_iter != null) {
+    			 
+//        		 if(page_idx == null) {
+//        			 return false;
+//        		 }
+        		 if(heap_page_iter.hasNext()) {
+        			 return true;
+        		 }else {
+        			 if (++page_idx < (numPages())) {
+//        				 page_idx += 1;
+        				 HeapPageId pid = new HeapPageId(table_id, page_idx);
+        				 HeapPage hp = (HeapPage) bp.getPage(_tid, pid, Permissions.READ_ONLY);
+        				 heap_page_iter = hp.iterator();
+        				 return heap_page_iter.hasNext();
+        			 }
+//        			 }else {
+//        				 page_idx = null;
+//        				 return false;
+//        			 }
+        		 }
     		 }
-    		 if(heap_page_iter.hasNext()) {
-    			 return true;
-    		 }else {
-    			 if (page_idx < (numPages()-1)) {
-    				 page_idx += 1;
-    				 HeapPageId pid = new HeapPageId(table_id, page_idx);
-    				 HeapPage hp = (HeapPage) bp.getPage(_tid, pid, Permissions.READ_ONLY);
-    				 heap_page_iter = hp.iterator();
-    				 return true;
-    			 }else {
-    				 page_idx = null;
-    				 return false;
-    			 }
-    		 }
+    		 return false;
+
     	 }
     	 
     	 public Tuple next() throws NoSuchElementException, DbException, TransactionAbortedException {
-    		 if(hasNext()) {
+    		 if(hasNext()) { 
     			 return heap_page_iter.next();
     		 }
-    		 throw new NoSuchElementException();
+    		 else {
+    			 throw new NoSuchElementException();
+    		 }
+
+    		 
     	 }
     	 
     	 public void rewind() throws DbException, TransactionAbortedException{
@@ -222,9 +233,9 @@ public class HeapFile implements DbFile {
     	 }
     	 
     	 public void close() {
-    		 bp = null;
+//    		 bp = null;
     		 heap_page_iter = null;
-    		 page_idx = null;
+//    		 page_idx = null;
     	 }
     }
 

@@ -18,7 +18,6 @@ public class HeapFile implements DbFile {
 	private File _f;
 	private TupleDesc _td;
 	private int table_id;
-	private int num_pages;
 	
     /**
      * Constructs a heap file backed by the specified file.
@@ -31,7 +30,6 @@ public class HeapFile implements DbFile {
         // some code goes here
     	this._f = f;
     	this.table_id = f.getAbsoluteFile().hashCode();
-    	this.num_pages = (int)(f.length() / BufferPool.getPageSize());
     	this._td = td;
     }
 
@@ -109,7 +107,7 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         // some code goes here
-        return this.num_pages;
+        return (int)(_f.length() / BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -122,7 +120,7 @@ public class HeapFile implements DbFile {
     	ArrayList<Page> pageArr = new ArrayList<>();
     	
     	// find a page with empty slot to insert if there is any	
-    	for (int i=0; i < num_pages; i++) {
+    	for (int i=0; i < numPages(); i++) {
     		HeapPageId curr_pid = new HeapPageId(table_id, i);
     		HeapPage curr_page = (HeapPage) Database.getBufferPool().getPage(tid, curr_pid, Permissions.READ_WRITE);
     		if (curr_page.getNumEmptySlots()>0) {
@@ -134,8 +132,8 @@ public class HeapFile implements DbFile {
     	}
     	
     	// create a new page since all are full or there is no page
-    	num_pages = num_pages + 1;
-    	HeapPageId new_pid = new HeapPageId(table_id, num_pages-1);
+    	// num_pages = num_pages + 1;
+    	HeapPageId new_pid = new HeapPageId(table_id, this.numPages()-1);
 		HeapPage new_page = new HeapPage(new_pid, HeapPage.createEmptyPageData());
 		new_page.insertTuple(t);
 		new_page.markDirty(true, tid);
@@ -199,7 +197,7 @@ public class HeapFile implements DbFile {
     		 if(heap_page_iter.hasNext()) {
     			 return true;
     		 }else {
-    			 if (page_idx < (num_pages-1)) {
+    			 if (page_idx < (numPages()-1)) {
     				 page_idx += 1;
     				 HeapPageId pid = new HeapPageId(table_id, page_idx);
     				 HeapPage hp = (HeapPage) bp.getPage(_tid, pid, Permissions.READ_ONLY);

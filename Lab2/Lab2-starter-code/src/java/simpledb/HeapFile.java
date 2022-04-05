@@ -133,7 +133,7 @@ public class HeapFile implements DbFile {
     	
     	// create a new page since all are full or there is no page
     	// num_pages = num_pages + 1;
-    	HeapPageId new_pid = new HeapPageId(table_id, this.numPages()-1);
+    	HeapPageId new_pid = new HeapPageId(table_id, this.numPages());
 		HeapPage new_page = new HeapPage(new_pid, HeapPage.createEmptyPageData());
 		new_page.insertTuple(t);
 		new_page.markDirty(true, tid);

@@ -33,7 +33,7 @@ public class BufferPool {
 
 	public final int MAX_PAGES;
 
-	private HashMap<PageId, Page> bp_map;
+	private LinkedHashMap<PageId, Page> bp_map;
 
 	/**
 	 * Creates a BufferPool that caches up to numPages pages.
@@ -80,13 +80,12 @@ public class BufferPool {
 			return bp_map.get(pid);
 		}
 		HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-		if (bp_map.size() < MAX_PAGES) {
-			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
-			bp_map.put(pid, fetched_page);
-			return fetched_page;
+		if (bp_map.size() >= MAX_PAGES) {
+			evictPage();
 		}
-		throw new DbException("Maximum page number reached in BufferPool");
-
+		HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+		bp_map.put(pid, fetched_page);
+		return fetched_page;
 	}
 
 	/**
@@ -152,16 +151,16 @@ public class BufferPool {
 		// not necessary for lab1
 		HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
 		ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
-		System.out.println(dirtied_pages);
 		// replace all the affected pages by the new version
 		for (Page page : dirtied_pages) {
 			page.markDirty(true, tid);
 			PageId pid = page.getId();
-			if(!bp_map.containsKey(pid)) {
+			if (!bp_map.containsKey(pid)) {
 				getPage(tid, page.getId(), Permissions.READ_WRITE);
 			}
 			bp_map.put(pid, page);
 		}
+		System.out.println(bp_map.size());
 	}
 
 	/**

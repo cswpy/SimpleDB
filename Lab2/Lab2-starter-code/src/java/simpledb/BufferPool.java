@@ -184,6 +184,7 @@ public class BufferPool {
 		ArrayList<Page> dirtied_pages = file.deleteTuple(tid, t);
 		// mark affected pages as dirty
 		for (Page page : dirtied_pages) {
+			page.markDirty(true, tid);
 			if (!bp_map.containsKey(page.getId()))
 				getPage(tid, page.getId(), Permissions.READ_ONLY);
 			bp_map.put(page.getId(), page);

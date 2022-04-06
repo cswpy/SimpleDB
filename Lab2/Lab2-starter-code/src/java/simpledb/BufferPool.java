@@ -160,7 +160,6 @@ public class BufferPool {
 			}
 			bp_map.put(pid, page);
 		}
-		System.out.println(bp_map.size());
 	}
 
 	/**
@@ -227,7 +226,8 @@ public class BufferPool {
 		// some code goes here
 		if (bp_map.containsKey(pid)) {
 			HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+			HeapPage fetched_page = (HeapPage) bp_map.get(pid);
+//			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
 			TransactionId tid = fetched_page.isDirty();
 			if (tid != null) {
 				hf.writePage(fetched_page);

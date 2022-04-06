@@ -42,7 +42,7 @@ public class HeapPageId implements PageId {
      */
     public int hashCode() {
         // some code goes here
-    	return this.getTableId() + this.getPageNumber();
+    	return (31 *this.getTableId()) + this.getPageNumber();
     }
 
     /**

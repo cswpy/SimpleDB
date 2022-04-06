@@ -27,7 +27,7 @@ At page level, `HeapPage.insertTuple()` inserts a given tuple into a page after 
 
 At file level, `HeapFile.insertTuple()` insert a given tuple into a file by finding a page in the file which has an empty slot for insertion and then calls `HeapPage.insertTuple()` on that page, and `HeapFile.deleteTuple()` deletes a given tuple in a file by locating the page on which the tuple is stored using its record id and calls `HeapPage.deleteTuple()` on that page. Both `HeapFile.insertTuple()` and `HeapFile.deleteTuple()` return an ArrayList of pages that are modified.
 
-In the buffer pool, given a tuple and a table id, `BufferPool.insertTuple()` locates the `HeapFile` associated with the table using `getCatalog().getDatabaseFile()` and then calls `HeapPage.insertTuple()` on that page to insert the given tuple. The list of pages returned by `HeapPage.insertTuple()` are marked dirty; the pages that are not originally in the buffer pool are then added using the `BufferPool.getPage()` method, and those origianally in the buffer pool are replaced by the modified version of the pages. `BufferPool.deleteTuple()` works similarly by invoking `HeapFile.deleteTuple()`.
+In the buffer pool, given a tuple and a table id, `BufferPool.insertTuple()` locates the `HeapFile` associated with the table using `getCatalog().getDatabaseFile()` and then calls `HeapFile.insertTuple()` on that file to insert the given tuple. The list of pages returned by `HeapFile.insertTuple()` are marked dirty; the pages that are not originally in the buffer pool are then added using the `BufferPool.getPage()` method, and those origianally in the buffer pool are replaced by the modified version of the pages. `BufferPool.deleteTuple()` works similarly by invoking `HeapFile.deleteTuple()`.
 
 ## Insertion and Deletion
 For insertion/deletion, we iterated the dirtied pages returned from `heapfile.insertTuple()/heapfile.deleteTuple()`, marked each page as dirty, and added it to the buffer pool heap map. If the dirty page was not in the buffer pool, we called the `getPage` method to check whether we had to evict an existing page.
@@ -36,10 +36,6 @@ For insertion/deletion, we iterated the dirtied pages returned from `heapfile.in
 For our eviction policy, we chose the LRU, in which the page that was inserted/updated in the buffer the earliest gets evicted. In order to implement this, we used the `LinkedHashMap` data structure to store the pages in the buffer pool, and set the `accessOrder` parameter in its constructor. This allowed us to retrieve and evict pages in the buffer pool in the order of access (least recently accessed first). When iterating the buffer pool, because LinkedHashMap treats `get()` as an access to the element, there were cases where we had to create a read-only copy of the LinkedHashMap using `entrySet()`in order to avoid _ConcurrentModificationException_. This would increase the memory usage of the application, but it was the tradeoff we made to ensure the LRU policy.
 
 # Confusing Points
-
-The `getPage()` behaves differently when the page requested is in the buffer pool. Since this function also updates the page in buffer pool, we need to explicitly manipulate the buffer pool hashmap to update the page if it is already cached.
-
-
 
 # Time Spent
 We spent roughly three full days as a group of three to finish this lab. A significant portion of our time was spent fixing the errors from the system tests, which we found to be much harder to debug than the individual tests.

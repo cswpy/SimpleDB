@@ -83,9 +83,9 @@ public class BufferPool {
 		if (bp_map.size() >= MAX_PAGES) {
 			evictPage();
 		}
-		Page fetched_page = hf.readPage(pid);
+		HeapPage fetched_page = (HeapPage) hf.readPage(pid);
 		bp_map.put(pid, fetched_page);
-		return (HeapPage) fetched_page;
+		return fetched_page;
 	}
 
 	/**

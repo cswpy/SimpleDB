@@ -43,7 +43,7 @@ public class BufferPool {
 	public BufferPool(int numPages) {
 		// some code goes here
 		MAX_PAGES = numPages;
-		bp_map = new LinkedHashMap<>(MAX_PAGES);
+		bp_map = new LinkedHashMap<>(MAX_PAGES, .75f, true);
 	}
 
 	public static int getPageSize() {
@@ -83,9 +83,9 @@ public class BufferPool {
 		if (bp_map.size() >= MAX_PAGES) {
 			evictPage();
 		}
-		HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+		Page fetched_page = hf.readPage(pid);
 		bp_map.put(pid, fetched_page);
-		return fetched_page;
+		return (HeapPage) fetched_page;
 	}
 
 	/**
@@ -197,9 +197,10 @@ public class BufferPool {
 	public synchronized void flushAllPages() throws IOException {
 		// some code goes here
 		// not necessary for lab1
-		for (Map.Entry<PageId, Page> bp_element : bp_map.entrySet()) {
-			PageId pid = bp_element.getKey();
-			this.flushPage(pid);
+		if (bp_map.size() > 0) {
+			for(Map.Entry<PageId, Page> p: bp_map.entrySet()) {
+				this.flushPage(p.getKey());
+			}
 		}
 	}
 
@@ -214,7 +215,9 @@ public class BufferPool {
 	public synchronized void discardPage(PageId pid) {
 		// some code goes here
 		// not necessary for lab1
-		bp_map.remove(pid);
+		if (bp_map.containsKey(pid)) {
+			bp_map.remove(pid);
+		}
 	}
 
 	/**
@@ -226,8 +229,12 @@ public class BufferPool {
 		// some code goes here
 		if (bp_map.containsKey(pid)) {
 			HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-			HeapPage fetched_page = (HeapPage) bp_map.get(pid);
-//			HeapPage fetched_page = (HeapPage) hf.readPage(pid);
+			HeapPage fetched_page = null;
+			for (Map.Entry<PageId, Page> p : bp_map.entrySet()) { // use entrySet to avoid ConcurrentModificationException for LinkedHeapMap
+				if(pid == p.getKey()) {
+					fetched_page = (HeapPage) p.getValue();
+				}
+			}
 			TransactionId tid = fetched_page.isDirty();
 			if (tid != null) {
 				hf.writePage(fetched_page);

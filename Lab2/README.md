@@ -15,7 +15,7 @@ The implementation of `StringAggregator` is analogous to that of `IntegerAggrega
 #### Aggregate
 The `Aggregate` class contains attributes `child` (an `OpIterator` which fetechs tuples to compute aggregation), `afield` (aggregate field index), `gfield` (group-by field index, -1 if no grouping), `aop` (an `Aggregator.Op` specifying which aggregation to perform), `typeAggregator` (a `Aggregator` which is an `IntegerAggregator` if aggregating on integers or a `StringAggregator` if aggregating on string), and `aggIterator` (a `TupleIterator` that can iterate through the resulting set after aggregation).
 
-In `Aggregate.open()`, the aggregate is computed by feeding the tuple we get from the `child` iterator to the `typeAggregator.mergeTupleIntoGroup()` method, and `aggIterator` is initialized as `typeAggregator.iterator()`.
+In `Aggregate.open()`, the aggregate is computed by feeding the tuple we get from the `child` iterator to the `typeAggregator.mergeTupleIntoGroup()` method, and `aggIterator` is initialized as `typeAggregator.iterator()`. `Aggregate.fetchNext()` simply returns `aggIterator.next()` if there is still entry in the aggregate.
 
 ### HeapFile Mutability
 At page level, `HeapPage.insertTuple()` inserts a given tuple into a page after checking that there is empty slot and that the schema is compatible, and `HeapPage.deleteTuple()` deletes a given tuple by clearing the bit in the header of the page after checking that the tuple is on the page.

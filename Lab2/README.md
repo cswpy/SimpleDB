@@ -1,4 +1,4 @@
-Daniel Jang, Philip Wang, Steven Chen
+Daniel Jang, Philip Wang, Suei-Wen Chen
 
 # Logistics
 
@@ -7,8 +7,23 @@ Daniel Jang, Philip Wang, Steven Chen
 ### Filter and Join
 
 ### Aggregates
+#### IntegerAggregator
+
+#### StringAggregator
+The implementation of `StringAggregator` is analogous to that of `IntegerAggregator`.
+
+#### Aggregate
+The `Aggregate` class contains attributes `child` (an `OpIterator` which fetechs tuples to compute aggregation), `afield` (aggregate field index), `gfield` (group-by field index, -1 if no grouping), `aop` (an `Aggregator.Op` specifying which aggregation to perform), `typeAggregator` (a `Aggregator` which is an `IntegerAggregator` if aggregating on integers or a `StringAggregator` if aggregating on string), and `aggIterator` (a `TupleIterator` that can iterate through the resulting set after aggregation).
+
+In `Aggregate.open()`, the aggregate is computed by feeding the tuple we get from the `child` iterator to the `typeAggregator.mergeTupleIntoGroup()` method, and `aggIterator` is initialized as `typeAggregator.iterator()`.
 
 ### HeapFile Mutability
+At page level, `HeapPage.insertTuple()` inserts a given tuple into a page after checking that there is empty slot and that the schema is compatible, and `HeapPage.deleteTuple()` deletes a given tuple by clearing the bit in the header of the page after checking that the tuple is on the page.
+
+At file level, `HeapFile.insertTuple()` insert a given tuple into a file by finding a page in the file which has an empty slot for insertion and then calls `HeapPage.insertTuple()` on that page, and `HeapFile.deleteTuple()` deletes a given tuple in a file by locating the page on which the tuple is stored using its record id and calls `HeapPage.deleteTuple()` on that page. Both `HeapFile.insertTuple()` and `HeapFile.deleteTuple()` return an ArrayList of pages that are modified.
+
+In the buffer pool, given a tuple and a table id, `BufferPool.insertTuple()` locates the `HeapFile` associated with the table using `getCatalog().getDatabaseFile()` and then calls `HeapPage.insertTuple()` on that page to insert the given tuple. The list of pages returned by `HeapPage.insertTuple()` are marked dirty; the pages that are not originally in the buffer pool are then added using the `BufferPool.getPage()` method, and those origianally in the buffer pool are replaced by the modified version of the pages. `BufferPool.deleteTuple()` works similarly by invoking `HeapFile.deleteTuple()`.
+
 
 ### Insertion and Deletion
 
@@ -22,4 +37,4 @@ For our eviction policy, we chose the LRU, in which the page that was inserted/u
 
 ## Time Spent
 
-We spent roughly three full days as a group of three to finish this lab. A significant portion of our time was spent fixing the errors from the system tests, which we found to be much more harder to debug than the individual tests.
+We spent roughly three full days as a group of three to finish this lab. A significant portion of our time was spent fixing the errors from the system tests, which we found to be much harder to debug than the individual tests.

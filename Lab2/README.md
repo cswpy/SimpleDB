@@ -5,8 +5,14 @@ This writeup explains the design choices that we made in the implementation of l
 
 ## Filter and Join
 
+### Join
+
+The `join` implements a naïve nested loop approach. It maintains the most recent tuple from the outer relation, and iterate through the tuples from the inner relation until it is exhausted, in which case we advance the iterator for the outer relation.
+
 ## Aggregates
 ### IntegerAggregator
+
+The `IntegerAggregator` maintains two hashmaps of, one for keeping track of the running estimates of all the aggregation functions other than `AVG()`, one for the sum and count that is used for computing the `AVG()`. The keys for both of the hashmaps are the group-by values. We set group value to NULL if no grouping is specified. 
 
 ### StringAggregator
 The implementation of `StringAggregator` is analogous to that of `IntegerAggregator`.

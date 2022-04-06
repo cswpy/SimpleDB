@@ -1,28 +1,25 @@
+Daniel Jang, Philip Wang, Steven Chen
+
+# Logistics
+
 ## Design Choices
 
-### Catalog
-The catalog contains an array list of tables `ArrayList<Table> tableList`, where a table contains attributes `DbFile file`, `int tableId`, `String tableName`, `TupleDesc Schema`, and `String pKey` (primary key). The `tableId` of a table is the same as the `table_id` of the attribute `file` in order to uniquely associate a table and a heapfile.
+### Filter and Join
 
-### TupleDesc
-We used `ArrayList<TDItem>` as a container for storing the `TDItem` lists defined in a TupleDesc. ArrayList provides constant time for insertions and has already implemented an iterator over its elements.
+### Aggregates
 
+### HeapFile Mutability
 
-### Tuple 
-Tuple stores its collection of `Field` objects using `fields`, a fixed array of size given by its `TupleDesc`. Because the size of `fields` is not dynamic, we did not use an ArrayList in our implementation of `*iterator`, but instead overrode the method `hasNext()` and `next()`. 
+### Insertion and Deletion
 
+For insertion/deletion, we iterated the dirtied pages returned from `heapfile.insertTuple()/heapfile.deleteTuple()`, marked each page as dirty, and added it to the buffer pool heap map. If the dirty page was not in the buffer pool, we called the `getPage` method to check whether we had to evict an existing page.
 
-### HeapPage
-Every instance of a HeapPage would use pageSize from the `BufferPool` instance and tuple size retrieved from its `TupleDesc` to calculate its maximum number of tuples and header size in bytes. To check whether the ith slot is occupied, we first calculated `header_byte` to determine which header byte to examine, and then `header_bit` to determine which of the 8 bits in the header_byte to check. A simple bit operation would determine whether the `header_bit`th bit at header_byte is 0 or 1. To get the total number of empty slots, we iterated over all possible slots of the HeapPage and counted the empty ones. In our implementation of the iterator, we first constructed an array list, iterated over all slots and added non-empty ones to the array list. 
+### Eviction Policy
 
-
-### HeapFile
-Upon the creation of a table, HeapFile will generate a unique table id from the absolute path of the data file. To read a particular page in a HeapFile, it uses the `RandomAccessFile` to seek the correct position and read exactly `PAGE_SIZE` number of bytes. To obtain all the tuples in a HeapFile, we first fetch the `BufferPool` instance from the database and query the first-ordered page in the HeapFile from the BufferPool. Once the tuples over a page are exausted, we first check whether there is a next page. If positive, we then get an iterator over all the tuples on the next page and store it inside the `HeapFileIterator` instance. If not, it means we have exausted all the tuples of all the pages in this HeapFile. 
-
-### SeqScan
-The class `SeqScan` implements `OpIterator` and contains attributes `TransactionId tid`, `int tableid`, `String tableAlias`, and `DbFileIterator iterator`. The `tableAlias` helps support aliasing tables in sql commands, and the `iterator` supports the functionality of traversing data records in the associated `HeapFile`.
+For our eviction policy, we chose the LRU, in which the page that was inserted/updated in the buffer the earliest gets evicted. In order to implement this, we used the `LinkedHashMap` data structure to store the pages in the buffer pool, and set the `accessOrder` parameter in its constructor. This allowed us to retrieve and evict pages in the buffer pool in the order of access (least recently accessed first). When iterating the buffer pool, because LinkedHashMap treats `get()` as an access to the element, there were cases where we had to create a read-only copy of the LinkedHashMap using `entrySet()`in order to avoid _ConcurrentModificationException_. This would increase the memory usage of the application, but it was the tradeoff we made to ensure the LRU policy.
 
 ## Confusing Points
-The relationship between catalog, bufferpool, HeapFile, and HeapPages are unclear at first. 
 
 ## Time Spent
-We spent roughly two full days as a group of three to finish this lab. A significant portion of our time was spent familiarizing ourselves with Java OOP. 
+
+We spent roughly three full days as a group of three to finish this lab. A significant portion of our time was spent fixing the errors from the system tests, which we found to be much more harder to debug than the individual tests.

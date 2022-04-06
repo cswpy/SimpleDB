@@ -1,6 +1,6 @@
 Daniel Jang, Philip Wang, Suei-Wen Chen
 
-# Logistics
+# Lab 2 Documentation
 
 ## Design Choices
 

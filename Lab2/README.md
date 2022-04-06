@@ -1,4 +1,4 @@
-Daniel Jang, Philip Wang, Suei-Wen Chen
+Daniel Jang, Phillip Wang, Suei-Wen Chen
 
 # Lab 2 Documentation
 This writeup explains the design choices that we made in the implementation of lab 2.

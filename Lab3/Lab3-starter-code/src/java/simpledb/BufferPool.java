@@ -285,6 +285,7 @@ public class BufferPool {
 	public void transactionComplete(TransactionId tid) throws IOException {
 		// some code goes here
 		// not necessary for lab1|lab2
+		transactionComplete(tid, true);
 	}
 
 	/** Return true if the specified transaction has a lock on the specified page */
@@ -305,11 +306,26 @@ public class BufferPool {
 		// some code goes here
 		// not necessary for lab1|lab2
 		
-//		if(commit){
-//			flushPages(tid);
-//		}
-		// RELEASE LOCKS		
-		// lock_manager.removeDependency(tid);
+		if (commit) { // if commit
+			flushPages(tid); // releasing done in flushPages
+		} else { // if abort
+			// set copy of bp_map to prevent concurrent modification exception
+			Set<Entry<PageId, Page>> bpMapEntries = new HashSet<>(bp_map.entrySet()); 
+			
+			for(Map.Entry<PageId, Page> p: bpMapEntries) {
+				PageId pid = p.getKey();			
+				if (lock_manager.holdsLock(tid, pid)) { 
+					// if page is locked by this transaction, get the version on disk
+					HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+					// bp_map.put(pid, hf.readPage(pid));
+					discardPage(pid);
+					// release the page
+					releasePage(tid, pid); // this is not working yet
+					
+				}
+			}
+		}		
+
 	}
 
 	/**
@@ -434,6 +450,15 @@ public class BufferPool {
 	public synchronized void flushPages(TransactionId tid) throws IOException {
 		// some code goes here
 		// not necessary for lab1|lab2
+		// All pages touched by tid are flushed and then released.
+		
+		for(Map.Entry<PageId, Page> p: bp_map.entrySet()) { // for each page in buffer
+			PageId pid = p.getKey();
+			if (lock_manager.holdsLock(tid, pid)) { // if page locked by this transaction
+				flushPage(pid);
+				releasePage(tid, pid);
+			}
+		}
 	}
 
 	/**
@@ -442,19 +467,19 @@ public class BufferPool {
 	 */
 	private synchronized void evictPage() throws DbException {
 		// some code goes here
-		Iterator bp_iterator = bp_map.entrySet().iterator();
-		if (bp_iterator.hasNext()) {
-			Map.Entry<PageId, Page> eldest_p = (Map.Entry<PageId, Page>) bp_iterator.next();
-			PageId pid = eldest_p.getKey();
-			try {
-				flushPage(pid);
-			} catch (IOException e) {
-				e.printStackTrace();
+		for (Map.Entry<PageId, Page> p: bp_map.entrySet()) {
+			if (p.getValue().isDirty()==null) { // if page is clean
+				PageId pid = p.getKey();
+				try {
+					flushPage(pid);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				bp_map.remove(pid);
+				return;
 			}
-			bp_map.remove(pid);
-		} else {
-			throw new DbException("There is no page to evict");
 		}
+		throw new DbException("There is no page to evict");
 	}
 
 }

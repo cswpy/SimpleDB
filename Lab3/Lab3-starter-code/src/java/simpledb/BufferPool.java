@@ -55,9 +55,15 @@ class LockManager {
 	}
 	
 	private ConcurrentHashMap<PageId, PageLock> pageLockTable;
+	private Graph DepGraph;
 	
 	public LockManager() {
 		pageLockTable = new ConcurrentHashMap<>();
+		DepGraph = new Graph();
+	}
+	
+	public synchronized boolean detectCycle() {
+		return DepGraph.checkCycle();
 	}
 	
 	public synchronized boolean acquireLock(TransactionId tid, PageId pid, Permissions perm) {
@@ -85,7 +91,8 @@ class LockManager {
 			if(pageLockTable.containsKey(pid)) {
 				// Check the type of the lock being held
 				if(pageLockTable.get(pid).getPerm() == Permissions.READ_WRITE) {
-					// If exclusive lock held, return false unless held by same transaction
+					// If exclusive lock held by another transaction, 
+					// add dependency to the dependency graph and return false
 					return holdsLock(tid, pid);
 				}
 				else {
@@ -116,6 +123,27 @@ class LockManager {
 	
 	public synchronized boolean holdsLock(TransactionId tid, PageId pid) {
 		return pageLockTable.containsKey(pid) && pageLockTable.get(pid).lockHolder.contains(tid);
+	}
+	
+	// return the id of transaction that currently holds exclusive lock to page pid  	
+	private synchronized TransactionId getXLockHolder(PageId pid) {
+		if (pageLockTable.get(pid).getPerm() == Permissions.READ_WRITE){
+			return pageLockTable.get(pid).lockHolder.get(0);
+		}
+		return null;
+	}
+	
+	// add dependency edge from tid to the transaction that currently holds exclusive lock to page pid 
+	public synchronized void addDependency(TransactionId tid, PageId pid) {
+		TransactionId XlockHolder = getXLockHolder(pid);
+		if(XlockHolder!=null) {
+			DepGraph.addDep(getXLockHolder(pid), tid);	
+		}		
+	}
+	
+	// removes all edges to tid in the dependency graph
+	public synchronized void removeDependency(TransactionId tid) {
+		DepGraph.removeDep(tid);
 	}
 }
 
@@ -194,14 +222,30 @@ public class BufferPool {
 			throws TransactionAbortedException, DbException {
 		// some code goes here
 		boolean lockGranted = lock_manager.acquireLock(tid, pid, perm);
+		if(!lockGranted) {
+			lock_manager.addDependency(tid, pid);
+		}
+		int cnt = -1;		
 		while(!lockGranted) {
+			cnt+=1;
+			if(cnt == 10) { // run cycle detection every second
+				if(lock_manager.detectCycle()) { // abort current transaction and raise exception if cyclic 										
+					try{
+						transactionComplete(tid, false);
+						throw new TransactionAbortedException();
+					}catch(IOException e) {
+						e.printStackTrace();
+						throw new DbException("");
+					}
+				}				
+				cnt = 0;				
+			}
 			try {
-				Thread.sleep(100);
+				Thread.sleep(100); // try to acquire lock every 0.1s 
 			}catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			
-			lockGranted = lock_manager.acquireLock(tid, pid, perm);
+			lockGranted = lock_manager.acquireLock(tid, pid, perm);			
 		}
 		
 		if (bp_map.containsKey(pid)) {
@@ -260,6 +304,12 @@ public class BufferPool {
 	public void transactionComplete(TransactionId tid, boolean commit) throws IOException {
 		// some code goes here
 		// not necessary for lab1|lab2
+		
+//		if(commit){
+//			flushPages(tid);
+//		}
+		// RELEASE LOCKS		
+		// lock_manager.removeDependency(tid);
 	}
 
 	/**

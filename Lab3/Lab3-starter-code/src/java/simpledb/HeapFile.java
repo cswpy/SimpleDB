@@ -129,6 +129,11 @@ public class HeapFile implements DbFile {
     			pageArr.add(curr_page);
     			return pageArr;
     		}
+		// A lock on curr_page is granted to tid upon creation, so if we do not
+    		// use the page then the lock should be released.
+    		else {
+    			Database.getBufferPool().releasePage(tid, curr_page.getId());
+    		}
     	}
     	
     	// create a new page since all are full or there is no page

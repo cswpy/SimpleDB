@@ -156,17 +156,14 @@ class LockManager {
 	
 	// return the id of transaction that currently holds exclusive lock to page pid  	
 	private synchronized TransactionId getXLockHolder(PageId pid) {
-		if (pageLockTable.get(pid).getPerm() == Permissions.READ_WRITE){
-			return pageLockTable.get(pid).lockHolder.get(0);
-		}
-		return null;
+		return pageLockTable.get(pid).lockHolder.get(0);
 	}
 	
 	// add dependency edge from tid to the transaction that currently holds exclusive lock to page pid 
 	public synchronized void addDependency(TransactionId tid, PageId pid) {
 		TransactionId XlockHolder = getXLockHolder(pid);
 		if(XlockHolder!=null) {
-			DepGraph.addDep(getXLockHolder(pid), tid);	
+			DepGraph.addDep(XlockHolder, tid);	
 		}		
 	}
 	
@@ -254,7 +251,7 @@ public class BufferPool {
 		if(!lockGranted) {
 			lock_manager.addDependency(tid, pid);
 		}
-		int cnt = -1;		
+		int cnt = 0;		
 		while(!lockGranted) {
 			cnt+=1;
 			if(cnt == 10) { // run cycle detection every second
@@ -266,13 +263,14 @@ public class BufferPool {
 						e.printStackTrace();
 						throw new DbException("");
 					}
-				}				
-				cnt = 0;				
+				}
+				cnt = 0;
 			}
 			try {
 				Thread.sleep(100); // try to acquire lock every 0.1s 
 			}catch (InterruptedException e) {
 				e.printStackTrace();
+				throw new DbException("interupted");
 			}
 			lockGranted = lock_manager.acquireLock(tid, pid, perm);			
 		}
@@ -353,8 +351,8 @@ public class BufferPool {
 					
 				}
 			}
-		}		
-
+		}
+		lock_manager.removeDependency(tid);
 	}
 
 	/**

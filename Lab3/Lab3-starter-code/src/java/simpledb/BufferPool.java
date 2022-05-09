@@ -357,7 +357,11 @@ public class BufferPool {
 // 				}
 // 			}
 			ArrayList<PageId> locked_pages = lock_manager.getXactPages(tid);
+			ArrayList<PageId> tempArr = new ArrayList<>();
 			for (PageId pid: locked_pages) {
+				tempArr.add(pid);
+			}
+			for (PageId pid: tempArr) {
 				discardPage(pid);
 				releasePage(tid, pid);
 			}

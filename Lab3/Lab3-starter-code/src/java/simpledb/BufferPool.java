@@ -171,6 +171,11 @@ class LockManager {
 	public synchronized void removeDependency(TransactionId tid) {
 		DepGraph.removeDep(tid);
 	}
+	
+	// return the list of locks acquired by tid
+	public synchronized ArrayList<PageId> getXactPages(TransactionId tid){
+		return transactionTable.get(tid);
+	}
 }
 
 
@@ -337,19 +342,24 @@ public class BufferPool {
 			flushPages(tid); // releasing done in flushPages
 		} else { // if abort
 			// set copy of bp_map to prevent concurrent modification exception
-			Set<Map.Entry<PageId, Page>> bpMapEntries = new HashSet<>(bp_map.entrySet()); 
+// 			Set<Map.Entry<PageId, Page>> bpMapEntries = new HashSet<>(bp_map.entrySet()); 
 			
-			for(Map.Entry<PageId, Page> p: bpMapEntries) {
-				PageId pid = p.getKey();			
-				if (lock_manager.holdsLock(tid, pid)) { 
-					// if page is locked by this transaction, get the version on disk
-					// HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
-					// bp_map.put(pid, hf.readPage(pid));
-					discardPage(pid);
-					// release the page
-					releasePage(tid, pid); // this is not working yet
+// 			for(Map.Entry<PageId, Page> p: bpMapEntries) {
+// 				PageId pid = p.getKey();			
+// 				if (lock_manager.holdsLock(tid, pid)) { 
+// 					// if page is locked by this transaction, get the version on disk
+// 					// HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+// 					// bp_map.put(pid, hf.readPage(pid));
+// 					discardPage(pid);
+// 					// release the page
+// 					releasePage(tid, pid); 
 					
-				}
+// 				}
+// 			}
+			ArrayList<PageId> locked_pages = lock_manager.getXactPages(tid);
+			for (PageId pid: locked_pages) {
+				discardPage(pid);
+				releasePage(tid, pid);
 			}
 		}
 		lock_manager.removeDependency(tid);

@@ -55,11 +55,13 @@ class LockManager {
 	}
 	
 	private ConcurrentHashMap<PageId, PageLock> pageLockTable;
+	private ConcurrentHashMap<TransactionId, ArrayList<PageId>> transactionTable;
 	private Graph DepGraph;
 	
 	public LockManager() {
 		pageLockTable = new ConcurrentHashMap<>();
 		DepGraph = new Graph();
+		transactionTable = new ConcurrentHashMap<>();
 	}
 	
 	public synchronized boolean detectCycle() {
@@ -74,7 +76,9 @@ class LockManager {
 				// If there exists a page lock for this page
 				if(pageLockTable.get(pid).getPerm() == Permissions.READ_ONLY) {
 					// Grant shared lock when the page is held by another transaction with a shared lock
-					return pageLockTable.get(pid).addHolder(tid);
+					updateTransactionTable(tid, pid);
+					assert pageLockTable.get(pid).addHolder(tid) == true;
+					return true;
 				} else {
 					// Wait if exclusive lock held by other transaction
 					return holdsLock(tid, pid);
@@ -84,6 +88,7 @@ class LockManager {
 				PageLock pl = new PageLock(pid, Permissions.READ_ONLY);
 				pl.addHolder(tid);
 				pageLockTable.put(pid, pl);
+				updateTransactionTable(tid, pid);
 				return true;
 			}
 		}else if(perm == Permissions.READ_WRITE) {
@@ -103,6 +108,7 @@ class LockManager {
 				PageLock pl = new PageLock(pid, Permissions.READ_WRITE);
 				pl.addHolder(tid);
 				pageLockTable.put(pid, pl);
+				updateTransactionTable(tid, pid);
 				return true;
 			}
 		}
@@ -110,6 +116,8 @@ class LockManager {
 	}
 	
 	public synchronized boolean releaseLock(TransactionId tid, PageId pid) {
+		
+		// Remove
 		if(pageLockTable.containsKey(pid) && pageLockTable.get(pid).lockHolder.contains(tid)){
 			pageLockTable.get(pid).lockHolder.remove(tid);
 			if(pageLockTable.get(pid).lockHolder.isEmpty()) {
@@ -123,6 +131,19 @@ class LockManager {
 	
 	public synchronized boolean holdsLock(TransactionId tid, PageId pid) {
 		return pageLockTable.containsKey(pid) && pageLockTable.get(pid).lockHolder.contains(tid);
+	}
+	
+	private synchronized void updateTransactionTable(TransactionId tid, PageId pid) {
+		if (transactionTable.containsKey(tid)) {
+            if (!transactionTable.get(tid).contains(pid)) {
+                transactionTable.get(tid).add(pid);
+            }
+        } else {
+            // no entry tid
+            ArrayList<PageId> lockList = new ArrayList<PageId>();
+            lockList.add(pid);
+            transactionTable.put(tid, lockList);
+        }
 	}
 	
 	// return the id of transaction that currently holds exclusive lock to page pid  	
@@ -310,13 +331,13 @@ public class BufferPool {
 			flushPages(tid); // releasing done in flushPages
 		} else { // if abort
 			// set copy of bp_map to prevent concurrent modification exception
-			Set<Entry<PageId, Page>> bpMapEntries = new HashSet<>(bp_map.entrySet()); 
+			Set<Map.Entry<PageId, Page>> bpMapEntries = new HashSet<>(bp_map.entrySet()); 
 			
 			for(Map.Entry<PageId, Page> p: bpMapEntries) {
 				PageId pid = p.getKey();			
 				if (lock_manager.holdsLock(tid, pid)) { 
 					// if page is locked by this transaction, get the version on disk
-					HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+					// HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
 					// bp_map.put(pid, hf.readPage(pid));
 					discardPage(pid);
 					// release the page

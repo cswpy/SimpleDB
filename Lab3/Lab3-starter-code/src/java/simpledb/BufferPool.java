@@ -116,8 +116,16 @@ class LockManager {
 	}
 	
 	public synchronized boolean releaseLock(TransactionId tid, PageId pid) {
+		// Remove transaction table
+		if (transactionTable.containsKey(tid)) {
+			transactionTable.get(tid).remove(pid);
+			if (transactionTable.get(tid).size() == 0) {
+				transactionTable.remove(tid);
+			}
+		}
 		
-		// Remove
+		
+		// Remove lock table
 		if(pageLockTable.containsKey(pid) && pageLockTable.get(pid).lockHolder.contains(tid)){
 			pageLockTable.get(pid).lockHolder.remove(tid);
 			if(pageLockTable.get(pid).lockHolder.isEmpty()) {

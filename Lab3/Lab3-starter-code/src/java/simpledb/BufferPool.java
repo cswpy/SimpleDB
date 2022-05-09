@@ -375,15 +375,27 @@ public class BufferPool {
 		// some code goes here
 		// not necessary for lab1
 		HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(tableId);
-		ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
-		// replace all the affected pages by the new version
-		for (Page page : dirtied_pages) {
-			page.markDirty(true, tid);
-			PageId pid = page.getId();
-			if (!bp_map.containsKey(pid)) {
-				getPage(tid, page.getId(), Permissions.READ_WRITE);
+		try {
+			ArrayList<Page> dirtied_pages = file.insertTuple(tid, t);
+			// replace all the affected pages by the new version
+			for (Page page : dirtied_pages) {
+				try {
+					
+					page.markDirty(true, tid);
+					PageId pid = page.getId();
+					if (!bp_map.containsKey(pid)) {
+						getPage(tid, page.getId(), Permissions.READ_WRITE);
+					}
+					bp_map.put(pid, page);	
+				}catch(TransactionAbortedException e) {
+					throw new TransactionAbortedException();
+				}catch(Exception e) {
+					throw new DbException("DB exception at insert tuple");
+				}
 			}
-			bp_map.put(pid, page);
+			
+		}catch(TransactionAbortedException e) {
+			throw new TransactionAbortedException();
 		}
 	}
 
@@ -403,16 +415,21 @@ public class BufferPool {
 	public void deleteTuple(TransactionId tid, Tuple t) throws DbException, IOException, TransactionAbortedException {
 		// some code goes here
 		// not necessary for lab1
-
 		int table_id = t.getRecordId().getPageId().getTableId();
 		HeapFile file = (HeapFile) Database.getCatalog().getDatabaseFile(table_id);
-		ArrayList<Page> dirtied_pages = file.deleteTuple(tid, t);
-		// mark affected pages as dirty
-		for (Page page : dirtied_pages) {
-			page.markDirty(true, tid);
-			if (!bp_map.containsKey(page.getId()))
-				getPage(tid, page.getId(), Permissions.READ_WRITE);
-			bp_map.put(page.getId(), page);
+		try {
+			ArrayList<Page> dirtied_pages = file.deleteTuple(tid, t);
+			for (Page page : dirtied_pages) {
+				page.markDirty(true, tid);
+				if (!bp_map.containsKey(page.getId())) {
+						getPage(tid, page.getId(), Permissions.READ_WRITE);
+				}
+				bp_map.put(page.getId(), page);	
+			}
+		}catch(TransactionAbortedException e) {
+			throw new TransactionAbortedException();
+		}catch(Exception e) {
+			throw new DbException("DB exception at delete tuple");
 		}
 	}
 

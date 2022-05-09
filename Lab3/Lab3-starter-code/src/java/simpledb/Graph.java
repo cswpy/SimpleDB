@@ -22,7 +22,9 @@ class Graph {
 	public void addDep(TransactionId t1, TransactionId t2) {
     	if(DepGraph.containsKey(t1)) {
     		ArrayList<TransactionId> dependents = DepGraph.get(t1);
-    		dependents.add(t2);
+    		if(!dependents.contains(t2)) {
+    			dependents.add(t2);
+    		}
     	}else {
     		ArrayList<TransactionId> dependent = new ArrayList<>();
     		dependent.add(t2);
@@ -72,7 +74,7 @@ class Graph {
 	public boolean checkCycle() {    	
     	HashSet<TransactionId> visited = new HashSet<TransactionId>();
     	HashSet<TransactionId> rec = new HashSet<TransactionId>();
-    	for (TransactionId tid: DepGraph.keySet()){    		    	
+    	for (TransactionId tid: DepGraph.keySet()){
     		 if(dfsCycle(tid, visited, rec)) {
     			 return true;
     		 }
